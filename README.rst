@@ -4,6 +4,9 @@ pretix-banktool
 This is a command-line tool for `pretix`_ that allows you to automatically query your bank account and sync
 transaction data to a pretix server.
 
+**Currently, this tool stores your banking PIN in plain text on disk. We advise you to use a read-only banking login
+or strong two-factor-auth for transactions. We will add support for system keyrings or password prompts later.**
+
 Contributing
 ------------
 

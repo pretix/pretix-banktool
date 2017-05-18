@@ -2,10 +2,23 @@ import configparser
 
 import click
 
+from .config import validate_config
+from .testing import test_fints
+
 
 @click.group()
 def main():
     pass
+
+
+@main.command()
+@click.argument('configfile', type=click.Path(exists=True))
+def test(configfile):
+    config = configparser.ConfigParser()
+    config.read(configfile)
+    validate_config(config)
+    if config['banktool']['type'] == 'fints':
+        test_fints(config)
 
 
 @main.command()
@@ -18,6 +31,7 @@ def setup(type):
         click.echo('')
         click.echo(click.style('Banking information', fg='blue'))
         blz = click.prompt('Your bank\'s BLZ')
+        iban = click.prompt('Your account IBAN')
         endpoint = click.prompt('Your bank\'s FinTS endpount URL')
         username = click.prompt('Your online-banking username')
         pin = click.prompt('Your online-banking PIN', hide_input=True)
@@ -41,6 +55,7 @@ def setup(type):
             'blz': blz,
             'endpoint': endpoint,
             'username': username,
+            'iban': iban,
             'pin': pin
         }
     config['pretix'] = {
@@ -53,6 +68,9 @@ def setup(type):
 
     click.echo('')
     click.echo(click.style('Configuration file created!', fg='green'))
+    click.echo(click.style('Please note that your pin has been saved to the file in plain text. Make sure to secure '
+                           'the file appropriately.',
+                           fg='red'))
     click.echo('')
     click.echo('You can now run')
     click.echo('    pretix-banktool test %s' % filename)
