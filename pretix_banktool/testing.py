@@ -7,7 +7,7 @@ from fints.client import FinTS3PinTanClient
 
 
 def test_fints(config):
-    click.echo('Creating FinTS client…')
+    click.echo('Creating FinTS client...')
     f = FinTS3PinTanClient(
         config['fints']['blz'],
         config['fints']['username'],
@@ -15,9 +15,9 @@ def test_fints(config):
         config['fints']['endpoint'],
     )
 
-    click.echo('Fetching SEPA account list…')
+    click.echo('Fetching SEPA account list...')
     accounts = f.get_sepa_accounts()
-    click.echo('Looking for correct SEPA account…')
+    click.echo('Looking for correct SEPA account...')
     accounts_matching = [a for a in accounts if a.iban == config['fints']['iban']]
     if not accounts_matching:
         click.echo(click.style('The specified SEPA account %s could not be found.' % config['fints']['iban'],
@@ -36,7 +36,7 @@ def test_fints(config):
     account = accounts_matching[0]
     click.echo(click.style('Found matching SEPA account.', fg='green'))
 
-    click.echo('Fetching statement of the last 30 days…')
+    click.echo('Fetching statement of the last 30 days...')
     statement = f.get_statement(account, date.today() - timedelta(days=30), date.today())
     if statement:
         click.echo(click.style('Found %d transactions. The last one is:' % len(statement), fg='green'))
