@@ -2,6 +2,7 @@ import configparser
 from urllib.parse import urljoin
 
 import click
+from pretix_banktool.upload import upload_transactions
 
 from .config import validate_config
 from .testing import test_fints, test_pretix
@@ -24,6 +25,15 @@ def test(configfile, fints, pretix):
         test_fints(config)
     if pretix:
         test_pretix(config)
+
+
+@main.command()
+@click.argument('configfile', type=click.Path(exists=True))
+def upload(configfile):
+    config = configparser.ConfigParser()
+    config.read(configfile)
+    validate_config(config)
+    upload_transactions(config)
 
 
 @main.command()

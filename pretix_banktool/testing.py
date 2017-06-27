@@ -56,6 +56,8 @@ def test_pretix(config):
         })
         if 'results' in r.json():
             click.echo(click.style('Connection successful.', fg='green'))
+        else:
+            click.echo(click.style('Could not read response: %s' % str(r.text), fg='red'))
     except (RequestException, OSError) as e:
         click.echo(click.style('Connection error: %s' % str(e), fg='red'))
     except ValueError as e:

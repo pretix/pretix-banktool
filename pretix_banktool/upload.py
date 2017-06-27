@@ -1,0 +1,88 @@
+import sys
+from datetime import date, timedelta
+
+import click
+import requests
+from fints.client import FinTS3PinTanClient
+from pretix_banktool.config import get_endpoint, get_pin
+from pretix_banktool.parse import parse_transaction_details, join_reference
+from requests import RequestException
+
+
+def upload_transactions(config, days=30):
+    click.echo('Creating FinTS client...')
+    f = FinTS3PinTanClient(
+        config['fints']['blz'],
+        config['fints']['username'],
+        get_pin(config),
+        config['fints']['endpoint'],
+    )
+
+    click.echo('Fetching SEPA account list...')
+    accounts = f.get_sepa_accounts()
+    click.echo('Looking for correct SEPA account...')
+    accounts_matching = [a for a in accounts if a.iban == config['fints']['iban']]
+    if not accounts_matching:
+        click.echo(click.style('The specified SEPA account %s could not be found.' % config['fints']['iban'],
+                               fg='red'))
+        click.echo('Only the following SEPA accounts were detected:')
+        click.echo(', '.join([a.iban for a in accounts]))
+        sys.exit(1)
+    elif len(accounts_matching) > 1:
+        click.echo(click.style('Multiple SEPA accounts match the given IBAN. We currently can not handle this '
+                               'situation.',
+                               fg='red'))
+        click.echo('Only the following SEPA accounts were detected:')
+        click.echo(', '.join([a.iban for a in accounts]))
+        sys.exit(1)
+
+    account = accounts_matching[0]
+    click.echo(click.style('Found matching SEPA account.', fg='green'))
+
+    click.echo('Fetching statement of the last %d days...' % days)
+    statement = f.get_statement(account, date.today() - timedelta(days=days), date.today())
+    if statement:
+        click.echo(click.style('Found %d transactions.', fg='green'))
+        click.echo('Parsing...')
+
+        transactions = []
+        for transaction in statement:
+            transaction_details = parse_transaction_details(transaction.data['transaction_details'])
+            payer = {
+                'name': transaction_details.get('accountholder', ''),
+                'iban': transaction_details.get('accountnumber', ''),
+            }
+            reference, eref = join_reference(transaction_details.get('reference', '').split('\n'), payer)
+            if not eref:
+                eref = transaction_details.get('eref', '')
+            transactions.append({
+                'amount': str(transaction.data['amount'].amount),
+                'reference': reference + (' EREF: {}'.format(eref) if eref else ''),
+                'payer': (payer.get('name', '') + ' - ' + payer.get('iban', '')).strip(),
+                'date': transaction.data['date'].isoformat(),
+            })
+
+        payload = {
+            'event': None,
+            'transactions': transactions
+        }
+
+        click.echo('Uploading...')
+        try:
+            r = requests.post(get_endpoint(config), headers={
+                'Authorization': 'Token {}'.format(config['pretix']['key'])
+            }, json=payload)
+            if r.status_code == 201:
+                click.echo(click.style('Job uploaded.', fg='green'))
+            else:
+                click.echo(click.style('Invalid response code: %d' % r.status_code, fg='red'))
+                click.echo(r.text)
+                sys.exit(2)
+        except (RequestException, OSError) as e:
+            click.echo(click.style('Connection error: %s' % str(e), fg='red'))
+            sys.exit(2)
+        except ValueError as e:
+            click.echo(click.style('Could not read response: %s' % str(e), fg='red'))
+            sys.exit(2)
+    else:
+        click.echo('No recent transaction found.')
