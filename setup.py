@@ -10,7 +10,7 @@ except:
 
 setup(
     name='pretix-banktool',
-    version='0.0.1',
+    version='0.1.0',
     description='Command-line client for pretix that allows to synchronize bank transaction statements to pretix',
     long_description=long_description,
     url='https://github.com/pretix/pretix-banktool',
