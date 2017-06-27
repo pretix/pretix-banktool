@@ -1,12 +1,11 @@
 import pprint
 import sys
 from datetime import date, timedelta
-from urllib.parse import urljoin
 
 import click
 import requests
 from fints.client import FinTS3PinTanClient
-from pretix_banktool.config import get_endpoint
+from pretix_banktool.config import get_endpoint, get_pin
 from requests import RequestException
 
 
@@ -15,7 +14,7 @@ def test_fints(config):
     f = FinTS3PinTanClient(
         config['fints']['blz'],
         config['fints']['username'],
-        config['fints']['pin'],
+        get_pin(config),
         config['fints']['endpoint'],
     )
 

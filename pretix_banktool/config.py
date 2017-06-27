@@ -46,3 +46,7 @@ def get_endpoint(config):
         config['pretix']['server'],
         '/api/v1/organizers/{}/bankimportjobs/'.format(config['pretix']['organizer'])
     )
+
+
+def get_pin(config):
+    return config['fints']['pin'] or click.prompt('Your online-banking PIN', hide_input=True)

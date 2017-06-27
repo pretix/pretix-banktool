@@ -39,7 +39,9 @@ def setup(type):
         iban = click.prompt('Your account IBAN')
         endpoint = click.prompt('Your bank\'s FinTS endpount URL')
         username = click.prompt('Your online-banking username')
-        pin = click.prompt('Your online-banking PIN', hide_input=True)
+        click.echo(click.style('WARNING: If you enter your PIN here, it will be stored in clear text on your disk. '
+                               'If you leave it empty, you will instead be asked for it every time.', fg='yellow'))
+        pin = click.prompt('Your online-banking PIN', hide_input=True, default='', show_default=False)
 
     click.echo('')
     click.echo(click.style('pretix information', fg='blue'))
