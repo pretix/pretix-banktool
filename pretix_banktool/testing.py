@@ -62,5 +62,3 @@ def test_pretix(config):
         click.echo(click.style('Connection error: %s' % str(e), fg='red'))
     except ValueError as e:
         click.echo(click.style('Could not read response: %s' % str(e), fg='red'))
-
-

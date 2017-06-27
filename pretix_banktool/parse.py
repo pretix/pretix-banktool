@@ -1,5 +1,6 @@
 import string
 
+
 """
 Copyright (c) 2017 Nicole Klünder
 
@@ -82,9 +83,9 @@ def join_reference(reference_list, payer):
             if not d:
                 continue
             if not ((reference[-1] in string.ascii_lowercase and d[0] in string.ascii_lowercase) or
-                        (reference[-1] in string.ascii_uppercase and d[0] in string.ascii_uppercase) or
-                        (reference[-1] in string.digits + string.ascii_uppercase and d[0] in ('-', ':')) or
-                        (reference[-1] == ' ' or d[0] == ' ')):
+                    (reference[-1] in string.ascii_uppercase and d[0] in string.ascii_uppercase) or
+                    (reference[-1] in string.digits + string.ascii_uppercase and d[0] in ('-', ':')) or
+                    (reference[-1] == ' ' or d[0] == ' ')):
                 reference += ' '
             reference += d
     reference = [s for s in reference.split(' ') if s]

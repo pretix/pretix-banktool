@@ -5,7 +5,7 @@ import click
 import requests
 from fints.client import FinTS3PinTanClient
 from pretix_banktool.config import get_endpoint, get_pin
-from pretix_banktool.parse import parse_transaction_details, join_reference
+from pretix_banktool.parse import join_reference, parse_transaction_details
 from requests import RequestException
 
 
