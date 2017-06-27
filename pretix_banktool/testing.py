@@ -1,9 +1,13 @@
 import pprint
 import sys
 from datetime import date, timedelta
+from urllib.parse import urljoin
 
 import click
+import requests
 from fints.client import FinTS3PinTanClient
+from pretix_banktool.config import get_endpoint
+from requests import RequestException
 
 
 def test_fints(config):
@@ -43,3 +47,19 @@ def test_fints(config):
         pprint.pprint(statement[-1].data)
     else:
         click.echo('No recent transaction found. Please check if this is correct.')
+
+
+def test_pretix(config):
+    click.echo('Testing pretix connection...')
+    try:
+        r = requests.get(get_endpoint(config), headers={
+            'Authorization': 'Token {}'.format(config['pretix']['key'])
+        })
+        if 'results' in r.json():
+            click.echo(click.style('Connection successful.', fg='green'))
+    except (RequestException, OSError) as e:
+        click.echo(click.style('Connection error: %s' % str(e), fg='red'))
+    except ValueError as e:
+        click.echo(click.style('Could not read response: %s' % str(e), fg='red'))
+
+

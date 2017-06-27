@@ -1,4 +1,5 @@
 import sys
+from urllib.parse import urljoin
 
 import click
 
@@ -38,3 +39,10 @@ def validate_pretix_config(config):
         if f not in config['pretix']:
             click.echo(click.style('Invalid config file: Does not contain value for pretix.%s' % f, fg='red'))
             sys.exit(1)
+
+
+def get_endpoint(config):
+    return urljoin(
+        config['pretix']['server'],
+        '/api/v1/organizers/{}/bankimportjobs/'.format(config['pretix']['organizer'])
+    )
