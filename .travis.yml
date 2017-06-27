@@ -5,7 +5,7 @@ python:
     - "3.5"
     - "3.6"
 install:
-    - pip install -U pip wheel setuptools
+    - pip install -U pip wheel setuptools flake8 isort
     - python setup.py develop
 script:
     - flake8 .
