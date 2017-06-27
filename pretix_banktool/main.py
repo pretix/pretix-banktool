@@ -29,11 +29,12 @@ def test(configfile, fints, pretix):
 
 @main.command()
 @click.argument('configfile', type=click.Path(exists=True))
-def upload(configfile):
+@click.option('--days', default=30, help='Number of days to go back.')
+def upload(configfile, days):
     config = configparser.ConfigParser()
     config.read(configfile)
     validate_config(config)
-    upload_transactions(config)
+    upload_transactions(config, days)
 
 
 @main.command()
