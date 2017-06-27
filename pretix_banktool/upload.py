@@ -42,7 +42,7 @@ def upload_transactions(config, days=30):
     click.echo('Fetching statement of the last %d days...' % days)
     statement = f.get_statement(account, date.today() - timedelta(days=days), date.today())
     if statement:
-        click.echo(click.style('Found %d transactions.', fg='green'))
+        click.echo(click.style('Found %d transactions.' % len(statement), fg='green'))
         click.echo('Parsing...')
 
         transactions = []
