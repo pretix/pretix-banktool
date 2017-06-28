@@ -30,11 +30,13 @@ def test(configfile, fints, pretix):
 @main.command()
 @click.argument('configfile', type=click.Path(exists=True))
 @click.option('--days', default=30, help='Number of days to go back.')
-def upload(configfile, days):
+@click.option('--ignore', help='Ignore all references that match the given regular expression. '
+                               'Can be passed multiple times.', multiple=True)
+def upload(configfile, days, ignore):
     config = configparser.ConfigParser()
     config.read(configfile)
     validate_config(config)
-    upload_transactions(config, days)
+    upload_transactions(config, days, ignore)
 
 
 @main.command()

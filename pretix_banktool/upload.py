@@ -2,6 +2,7 @@ import sys
 from datetime import date, timedelta
 
 import click
+import re
 import requests
 from fints.client import FinTS3PinTanClient
 from pretix_banktool.config import get_endpoint, get_pin
@@ -9,7 +10,16 @@ from pretix_banktool.parse import join_reference, parse_transaction_details
 from requests import RequestException
 
 
-def upload_transactions(config, days=30):
+def upload_transactions(config, days=30, ignore=None):
+    ignore = ignore or []
+    ignore_patterns = []
+    for i in ignore:
+        try:
+            ignore_patterns.append(re.compile(i))
+        except re.error as e:
+            click.echo(click.style('Not a valid regular expression: %s' % i, fg='red'))
+            click.echo(click.style('"%s" at position %d' % (e.msg, e.pos), fg='red'))
+
     click.echo('Creating FinTS client...')
     f = FinTS3PinTanClient(
         config['fints']['blz'],
@@ -46,6 +56,7 @@ def upload_transactions(config, days=30):
         click.echo('Parsing...')
 
         transactions = []
+        ignored = 0
         for transaction in statement:
             transaction_details = parse_transaction_details(transaction.data['transaction_details'])
             payer = {
@@ -55,13 +66,24 @@ def upload_transactions(config, days=30):
             reference, eref = join_reference(transaction_details.get('reference', '').split('\n'), payer)
             if not eref:
                 eref = transaction_details.get('eref', '')
-            transactions.append({
-                'amount': str(transaction.data['amount'].amount),
-                'reference': reference + (' EREF: {}'.format(eref) if eref else ''),
-                'payer': (payer.get('name', '') + ' - ' + payer.get('iban', '')).strip(),
-                'date': transaction.data['date'].isoformat(),
-            })
 
+            ignore = False
+            for i in ignore_patterns:
+                if i.search(reference):
+                    ignore = True
+                    ignored += 1
+                    break
+
+            if not ignore:
+                transactions.append({
+                    'amount': str(transaction.data['amount'].amount),
+                    'reference': reference + (' EREF: {}'.format(eref) if eref else ''),
+                    'payer': (payer.get('name', '') + ' - ' + payer.get('iban', '')).strip(),
+                    'date': transaction.data['date'].isoformat(),
+                })
+
+        if ignored > 0:
+            click.echo(click.style('Ignored %d transactions.' % ignored, fg='blue'))
         payload = {
             'event': None,
             'transactions': transactions
