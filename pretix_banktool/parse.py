@@ -94,21 +94,21 @@ def join_reference(reference_list, payer):
     if len(reference) >= 2 and reference[-2] == 'ABWA:':
         payer['abwa'] = reference[-1]
         reference = reference[:-2]
-    elif len(reference) >= 2 and reference[-3] == 'ABWA:':
+    elif len(reference) >= 3 and reference[-3] == 'ABWA:':
         payer['abwa'] = ''.join(reference[-2:])
         reference = reference[:-3]
 
     if len(reference) >= 2 and reference[-2] == 'BIC:':
         payer['bic'] = reference[-1]
         reference = reference[:-2]
-    elif len(reference) >= 2 and reference[-3] == 'BIC:':
+    elif len(reference) >= 3 and reference[-3] == 'BIC:':
         payer['bic'] = ''.join(reference[-2:])
         reference = reference[:-3]
 
     if len(reference) >= 2 and reference[-2] == 'IBAN:':
         payer['iban'] = reference[-1]
         reference = reference[:-2]
-    elif len(reference) >= 2 and reference[-3] == 'IBAN:':
+    elif len(reference) >= 3 and reference[-3] == 'IBAN:':
         payer['iban'] = ''.join(reference[-2:])
         reference = reference[:-3]
 
