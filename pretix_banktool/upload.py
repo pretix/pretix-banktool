@@ -1,13 +1,14 @@
+import re
 import sys
 from datetime import date, timedelta
 
 import click
-import re
 import requests
+from requests import RequestException
+
 from fints.client import FinTS3PinTanClient
 from pretix_banktool.config import get_endpoint, get_pin
 from pretix_banktool.parse import join_reference, parse_transaction_details
-from requests import RequestException
 
 
 def upload_transactions(config, days=30, ignore=None):

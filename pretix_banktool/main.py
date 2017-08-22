@@ -2,6 +2,7 @@ import configparser
 from urllib.parse import urljoin
 
 import click
+
 from pretix_banktool.upload import upload_transactions
 
 from .config import validate_config
