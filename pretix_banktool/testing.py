@@ -4,9 +4,10 @@ from datetime import date, timedelta
 
 import click
 import requests
+from requests import RequestException
+
 from fints.client import FinTS3PinTanClient
 from pretix_banktool.config import get_endpoint, get_pin
-from requests import RequestException
 
 
 def test_fints(config):
