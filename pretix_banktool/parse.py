@@ -2,7 +2,7 @@ import string
 
 
 """
-Copyright (c) 2017 Nicole Klünder
+Copyright (c) 2017 Laura Klünder
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,10 @@ def parse_transaction_details(raw_data):
 
     delimiter = raw_data[3]
 
-    lines = sorted((line[:2], line[2:].strip()) for line in raw_data.split(delimiter)[1:])
+    lines = sorted(
+        (line.replace("\n", "")[:2], line.replace("\n", "")[2:].strip())
+        for line in raw_data.split(delimiter)[1:]
+    )
     for code, data in lines:
         transaction_details.setdefault(code_mapping.get(code, code), []).append(data)
 
