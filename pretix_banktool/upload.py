@@ -8,7 +8,6 @@ from requests import RequestException
 
 from fints.client import FinTS3PinTanClient
 from pretix_banktool.config import get_endpoint, get_pin
-from pretix_banktool.parse import join_reference, parse_transaction_details
 
 
 def upload_transactions(config, days=30, ignore=None):
@@ -59,14 +58,18 @@ def upload_transactions(config, days=30, ignore=None):
         transactions = []
         ignored = 0
         for transaction in statement:
-            transaction_details = parse_transaction_details(transaction.data['transaction_details'])
+            reference = ' '.join(
+                transaction.data.get(t)
+                for t in (
+                    'posting_text', 'purpose', 'bank_reference', 'customer_reference'
+                )
+                if transaction.data.get(t)
+            )
             payer = {
-                'name': transaction_details.get('accountholder', ''),
-                'iban': transaction_details.get('accountnumber', ''),
+                'name': transaction.data.get('applicant_name', ''),
+                'iban': transaction.data.get('applicant_iban', ''),
             }
-            reference, eref = join_reference(transaction_details.get('reference', '').split('\n'), payer)
-            if not eref:
-                eref = transaction_details.get('eref', '')
+            eref = transaction.data.get('end_to_end_reference', '')
 
             ignore = False
             for i in ignore_patterns:

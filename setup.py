@@ -21,6 +21,7 @@ setup(
         'click==6.*',
         'fints==0.2.*',
         'requests',
+        'mt-940>=4.12*',
     ],
     packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
