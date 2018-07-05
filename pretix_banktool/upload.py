@@ -82,7 +82,7 @@ def upload_transactions(config, days=30, ignore=None):
                 transactions.append({
                     'amount': str(transaction.data['amount'].amount),
                     'reference': reference + (' EREF: {}'.format(eref) if eref else ''),
-                    'payer': (payer.get('name', '') + ' - ' + payer.get('iban', '')).strip(),
+                    'payer': ((payer.get('name') or '') + ' - ' + (payer.get('iban') or '')).strip(),
                     'date': transaction.data['date'].isoformat(),
                 })
 
