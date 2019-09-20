@@ -6,8 +6,9 @@ import click
 import requests
 from requests import RequestException
 
-from fints.client import FinTS3PinTanClient
+from fints.client import FinTS3PinTanClient, FinTSClientMode
 from pretix_banktool.config import get_endpoint, get_pin
+from pretix_banktool import __version__
 
 
 def test_fints(config):
@@ -17,36 +18,40 @@ def test_fints(config):
         config['fints']['username'],
         get_pin(config),
         config['fints']['endpoint'],
+        mode=FinTSClientMode.INTERACTIVE,
+        product_id='459BE10AAEE93C6AA90BE6FE3',
+        product_version=__version__
     )
+    f.set_tan_mechanism('942')  # TODO: Configurable
+    with f:
+        click.echo('Fetching SEPA account list...')
+        accounts = f.get_sepa_accounts()
+        click.echo('Looking for correct SEPA account...')
+        accounts_matching = [a for a in accounts if a.iban == config['fints']['iban']]
+        if not accounts_matching:
+            click.echo(click.style('The specified SEPA account %s could not be found.' % config['fints']['iban'],
+                                   fg='red'))
+            click.echo('Only the following SEPA accounts were detected:')
+            click.echo(', '.join([a.iban for a in accounts]))
+            sys.exit(1)
+        elif len(accounts_matching) > 1:
+            click.echo(click.style('Multiple SEPA accounts match the given IBAN. We currently can not handle this '
+                                   'situation.',
+                                   fg='red'))
+            click.echo('Only the following SEPA accounts were detected:')
+            click.echo(', '.join([a.iban for a in accounts]))
+            sys.exit(1)
 
-    click.echo('Fetching SEPA account list...')
-    accounts = f.get_sepa_accounts()
-    click.echo('Looking for correct SEPA account...')
-    accounts_matching = [a for a in accounts if a.iban == config['fints']['iban']]
-    if not accounts_matching:
-        click.echo(click.style('The specified SEPA account %s could not be found.' % config['fints']['iban'],
-                               fg='red'))
-        click.echo('Only the following SEPA accounts were detected:')
-        click.echo(', '.join([a.iban for a in accounts]))
-        sys.exit(1)
-    elif len(accounts_matching) > 1:
-        click.echo(click.style('Multiple SEPA accounts match the given IBAN. We currently can not handle this '
-                               'situation.',
-                               fg='red'))
-        click.echo('Only the following SEPA accounts were detected:')
-        click.echo(', '.join([a.iban for a in accounts]))
-        sys.exit(1)
+        account = accounts_matching[0]
+        click.echo(click.style('Found matching SEPA account.', fg='green'))
 
-    account = accounts_matching[0]
-    click.echo(click.style('Found matching SEPA account.', fg='green'))
-
-    click.echo('Fetching statement of the last 30 days...')
-    statement = f.get_statement(account, date.today() - timedelta(days=30), date.today())
-    if statement:
-        click.echo(click.style('Found %d transactions. The last one is:' % len(statement), fg='green'))
-        pprint.pprint(statement[-1].data)
-    else:
-        click.echo('No recent transaction found. Please check if this is correct.')
+        click.echo('Fetching statement of the last 14 days...')
+        statement = f.get_transactions(account, date.today() - timedelta(days=14), date.today())
+        if statement:
+            click.echo(click.style('Found %d transactions. The last one is:' % len(statement), fg='green'))
+            pprint.pprint(statement[-1].data)
+        else:
+            click.echo('No recent transaction found. Please check if this is correct.')
 
 
 def test_pretix(config):

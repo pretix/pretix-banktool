@@ -1,6 +1,7 @@
 import os
 
 from setuptools import find_packages, setup
+from pretix_banktool import __version__
 
 try:
     with open(os.path.join(os.path.dirname(__file__), 'README.rst'), encoding='utf-8') as f:
@@ -10,7 +11,7 @@ except:
 
 setup(
     name='pretix-banktool',
-    version='0.2.3',
+    version=__version__,
     description='Command-line client for pretix that allows to synchronize bank transaction statements to pretix',
     long_description=long_description,
     url='https://github.com/pretix/pretix-banktool',
@@ -19,7 +20,7 @@ setup(
 
     install_requires=[
         'click==6.*',
-        'fints==0.2.*',
+        'fints>=0.2.*',
         'requests',
         'mt-940>=4.12*',
     ],

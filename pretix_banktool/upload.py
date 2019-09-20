@@ -6,8 +6,9 @@ import click
 import requests
 from requests import RequestException
 
-from fints.client import FinTS3PinTanClient
+from fints.client import FinTS3PinTanClient, FinTSClientMode
 from pretix_banktool.config import get_endpoint, get_pin
+from pretix_banktool import __version__
 
 
 def upload_transactions(config, days=30, ignore=None):
@@ -21,94 +22,99 @@ def upload_transactions(config, days=30, ignore=None):
             click.echo(click.style('"%s" at position %d' % (e.msg, e.pos), fg='red'))
 
     click.echo('Creating FinTS client...')
+
     f = FinTS3PinTanClient(
         config['fints']['blz'],
         config['fints']['username'],
         get_pin(config),
         config['fints']['endpoint'],
+        mode=FinTSClientMode.INTERACTIVE,
+        product_id='459BE10AAEE93C6AA90BE6FE3',
+        product_version=__version__
     )
+    f.set_tan_mechanism('942')  # TODO: Configurable
+    with f:
+        click.echo('Fetching SEPA account list...')
+        accounts = f.get_sepa_accounts()
+        click.echo('Looking for correct SEPA account...')
+        accounts_matching = [a for a in accounts if a.iban == config['fints']['iban']]
+        if not accounts_matching:
+            click.echo(click.style('The specified SEPA account %s could not be found.' % config['fints']['iban'],
+                                   fg='red'))
+            click.echo('Only the following SEPA accounts were detected:')
+            click.echo(', '.join([a.iban for a in accounts]))
+            sys.exit(1)
+        elif len(accounts_matching) > 1:
+            click.echo(click.style('Multiple SEPA accounts match the given IBAN. We currently can not handle this '
+                                   'situation.',
+                                   fg='red'))
+            click.echo('Only the following SEPA accounts were detected:')
+            click.echo(', '.join([a.iban for a in accounts]))
+            sys.exit(1)
 
-    click.echo('Fetching SEPA account list...')
-    accounts = f.get_sepa_accounts()
-    click.echo('Looking for correct SEPA account...')
-    accounts_matching = [a for a in accounts if a.iban == config['fints']['iban']]
-    if not accounts_matching:
-        click.echo(click.style('The specified SEPA account %s could not be found.' % config['fints']['iban'],
-                               fg='red'))
-        click.echo('Only the following SEPA accounts were detected:')
-        click.echo(', '.join([a.iban for a in accounts]))
-        sys.exit(1)
-    elif len(accounts_matching) > 1:
-        click.echo(click.style('Multiple SEPA accounts match the given IBAN. We currently can not handle this '
-                               'situation.',
-                               fg='red'))
-        click.echo('Only the following SEPA accounts were detected:')
-        click.echo(', '.join([a.iban for a in accounts]))
-        sys.exit(1)
+        account = accounts_matching[0]
+        click.echo(click.style('Found matching SEPA account.', fg='green'))
 
-    account = accounts_matching[0]
-    click.echo(click.style('Found matching SEPA account.', fg='green'))
+        click.echo('Fetching statement of the last %d days...' % days)
+        statement = f.get_transactions(account, date.today() - timedelta(days=days), date.today())
+        if statement:
+            click.echo(click.style('Found %d transactions.' % len(statement), fg='green'))
+            click.echo('Parsing...')
 
-    click.echo('Fetching statement of the last %d days...' % days)
-    statement = f.get_statement(account, date.today() - timedelta(days=days), date.today())
-    if statement:
-        click.echo(click.style('Found %d transactions.' % len(statement), fg='green'))
-        click.echo('Parsing...')
-
-        transactions = []
-        ignored = 0
-        for transaction in statement:
-            reference = ' '.join(
-                transaction.data.get(t)
-                for t in (
-                    'posting_text', 'purpose', 'bank_reference', 'customer_reference'
+            transactions = []
+            ignored = 0
+            for transaction in statement:
+                reference = ' '.join(
+                    transaction.data.get(t)
+                    for t in (
+                        'posting_text', 'purpose', 'bank_reference', 'customer_reference'
+                    )
+                    if transaction.data.get(t)
                 )
-                if transaction.data.get(t)
-            )
-            payer = {
-                'name': transaction.data.get('applicant_name', ''),
-                'iban': transaction.data.get('applicant_iban', ''),
+                payer = {
+                    'name': transaction.data.get('applicant_name', ''),
+                    'iban': transaction.data.get('applicant_iban', ''),
+                }
+                eref = transaction.data.get('end_to_end_reference', '')
+
+                ignore = False
+                for i in ignore_patterns:
+                    if i.search(reference):
+                        ignore = True
+                        ignored += 1
+                        break
+
+                if not ignore:
+                    transactions.append({
+                        'amount': str(transaction.data['amount'].amount),
+                        'reference': reference + (' EREF: {}'.format(eref) if eref else ''),
+                        'payer': ((payer.get('name') or '') + ' - ' + (payer.get('iban') or '')).strip(),
+                        'date': transaction.data['date'].isoformat(),
+                    })
+
+            if ignored > 0:
+                click.echo(click.style('Ignored %d transactions.' % ignored, fg='blue'))
+            payload = {
+                'event': None,
+                'transactions': transactions
             }
-            eref = transaction.data.get('end_to_end_reference', '')
 
-            ignore = False
-            for i in ignore_patterns:
-                if i.search(reference):
-                    ignore = True
-                    ignored += 1
-                    break
-
-            if not ignore:
-                transactions.append({
-                    'amount': str(transaction.data['amount'].amount),
-                    'reference': reference + (' EREF: {}'.format(eref) if eref else ''),
-                    'payer': ((payer.get('name') or '') + ' - ' + (payer.get('iban') or '')).strip(),
-                    'date': transaction.data['date'].isoformat(),
-                })
-
-        if ignored > 0:
-            click.echo(click.style('Ignored %d transactions.' % ignored, fg='blue'))
-        payload = {
-            'event': None,
-            'transactions': transactions
-        }
-
-        click.echo('Uploading...')
-        try:
-            r = requests.post(get_endpoint(config), headers={
-                'Authorization': 'Token {}'.format(config['pretix']['key'])
-            }, json=payload)
-            if r.status_code == 201:
-                click.echo(click.style('Job uploaded.', fg='green'))
-            else:
-                click.echo(click.style('Invalid response code: %d' % r.status_code, fg='red'))
-                click.echo(r.text)
+            click.echo('Uploading...')
+            try:
+                r = requests.post(get_endpoint(config), headers={
+                    'Authorization': 'Token {}'.format(config['pretix']['key'])
+                }, json=payload)
+                if r.status_code == 201:
+                    click.echo(click.style('Job uploaded.', fg='green'))
+                else:
+                    click.echo(click.style('Invalid response code: %d' % r.status_code, fg='red'))
+                    click.echo(r.text)
+                    sys.exit(2)
+            except (RequestException, OSError) as e:
+                click.echo(click.style('Connection error: %s' % str(e), fg='red'))
                 sys.exit(2)
-        except (RequestException, OSError) as e:
-            click.echo(click.style('Connection error: %s' % str(e), fg='red'))
-            sys.exit(2)
-        except ValueError as e:
-            click.echo(click.style('Could not read response: %s' % str(e), fg='red'))
-            sys.exit(2)
-    else:
-        click.echo('No recent transaction found.')
+            except ValueError as e:
+                click.echo(click.style('Could not read response: %s' % str(e), fg='red'))
+                sys.exit(2)
+        else:
+            click.echo('No recent transaction found.')
