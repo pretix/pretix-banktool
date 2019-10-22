@@ -120,7 +120,7 @@ def upload_transactions(config, days=30, ignore=None):
             try:
                 r = requests.post(get_endpoint(config), headers={
                     'Authorization': 'Token {}'.format(config['pretix']['key'])
-                }, json=payload)
+                }, json=payload, verify=not config.getboolean('pretix', 'insecure', fallback=False))
                 if r.status_code == 201:
                     click.echo(click.style('Job uploaded.', fg='green'))
                 else:

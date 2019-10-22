@@ -78,7 +78,7 @@ def test_pretix(config):
     try:
         r = requests.get(get_endpoint(config), headers={
             'Authorization': 'Token {}'.format(config['pretix']['key'])
-        })
+        }, verify=not config.getboolean('pretix', 'insecure', fallback=False))
         if 'results' in r.json():
             click.echo(click.style('Connection successful.', fg='green'))
         else:
