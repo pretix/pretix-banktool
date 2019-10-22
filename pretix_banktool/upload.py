@@ -4,6 +4,8 @@ from datetime import date, timedelta
 
 import click
 import requests
+from fints.exceptions import FinTSUnsupportedOperation
+from fints.hhd.flicker import terminal_flicker_unix
 from requests import RequestException
 
 from fints.client import FinTS3PinTanClient, FinTSClientMode
@@ -32,8 +34,23 @@ def upload_transactions(config, days=30, ignore=None):
         product_id='459BE10AAEE93C6AA90BE6FE3',
         product_version=__version__
     )
-    f.set_tan_mechanism('942')  # TODO: Configurable
+    f.fetch_tan_mechanisms()
+    try:
+        with f:
+            m = f.get_tan_media()
+        f.set_tan_medium(m[1][0])
+    except FinTSUnsupportedOperation:
+        pass
     with f:
+        if f.init_tan_response:
+            click.echo(f.init_tan_response.challenge)
+            if getattr(f.init_tan_response, 'challenge_hhduc', None):
+                try:
+                    terminal_flicker_unix(f.init_tan_response.challenge_hhduc)
+                except KeyboardInterrupt:
+                    pass
+            tan = click.prompt('Please enter TAN:')
+            f.send_tan(f.init_tan_response, tan)
         click.echo('Fetching SEPA account list...')
         accounts = f.get_sepa_accounts()
         click.echo('Looking for correct SEPA account...')
