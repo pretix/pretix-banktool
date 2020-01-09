@@ -20,7 +20,7 @@ setup(
 
     install_requires=[
         'click==6.*',
-        'fints>=0.2.*',
+        'fints>=3.0.*',
         'requests',
         'mt-940>=4.12*',
     ],

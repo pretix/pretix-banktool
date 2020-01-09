@@ -4,13 +4,12 @@ from datetime import date, timedelta
 
 import click
 import requests
-from fints.exceptions import FinTSUnsupportedOperation
-from fints.hhd.flicker import terminal_flicker_unix
+from fints.client import FinTS3PinTanClient, FinTSClientMode
+from pretix_banktool import __version__
 from requests import RequestException
 
-from fints.client import FinTS3PinTanClient, FinTSClientMode
-from pretix_banktool.config import get_endpoint, get_pin
-from pretix_banktool import __version__
+from .config import get_endpoint, get_pin
+from .utils import ask_for_tan
 
 
 def test_fints(config):
@@ -24,27 +23,48 @@ def test_fints(config):
         product_id='459BE10AAEE93C6AA90BE6FE3',
         product_version=__version__
     )
-    f.fetch_tan_mechanisms()
-    try:
+
+    if not f.get_current_tan_mechanism():
+        f.fetch_tan_mechanisms()
+        mechanisms = list(f.get_tan_mechanisms().items())
+        if len(mechanisms) > 1:
+            click.echo("Multiple tan mechanisms available:")
+            s = None
+            for i, m in enumerate(mechanisms):
+                click.echo("Function {p.security_function}: {p.name}".format(p=m[1]))
+                if i == 0 or m[1].security_function == config['fints'].get('security_function'):
+                    s = m[0]
+
+            if not config['fints'].get('security_function'):
+                click.echo("Choosing first one since 'security_function' is not set in config file.")
+            f.set_tan_mechanism(s)
+        else:
+            f.set_tan_mechanism(mechanisms[0][0])
+
+    if f.is_tan_media_required() and not f.selected_tan_medium:
         with f:
             m = f.get_tan_media()
-        f.set_tan_medium(m[1][0])
-    except FinTSUnsupportedOperation:
-        pass
+        if len(m[1]) == 1:
+            f.set_tan_medium(m[1][0])
+        else:
+            click.echo("Multiple tan media available:")
+            s = None
+            for i, mm in enumerate(m[1]):
+                print(i,
+                      "Medium {p.tan_medium_name}: Phone no. {p.mobile_number_masked}, Last used {p.last_use}".format(
+                          p=mm))
+                if i == 0 or mm.tan_medium_name == config['fints'].get('tan_medium'):
+                    s = mm
+            if not config['fints'].get('tan_medium'):
+                click.echo("Choosing first one since 'tan_medium' is not set in config file.")
+            f.set_tan_medium(s)
 
     with f:
         if f.init_tan_response:
-            click.echo(f.init_tan_response.challenge)
-            if getattr(f.init_tan_response, 'challenge_hhduc', None):
-                try:
-                    terminal_flicker_unix(f.init_tan_response.challenge_hhduc)
-                except KeyboardInterrupt:
-                    pass
-            tan = click.prompt('Please enter TAN:')
-            f.send_tan(f.init_tan_response, tan)
+            ask_for_tan(f, f.init_tan_response)
 
         click.echo('Fetching SEPA account list...')
-        accounts = f.get_sepa_accounts()
+        accounts = ask_for_tan(f, f.get_sepa_accounts())
         click.echo('Looking for correct SEPA account...')
         accounts_matching = [a for a in accounts if a.iban == config['fints']['iban']]
         if not accounts_matching:
@@ -65,7 +85,7 @@ def test_fints(config):
         click.echo(click.style('Found matching SEPA account.', fg='green'))
 
         click.echo('Fetching statement of the last 14 days...')
-        statement = f.get_transactions(account, date.today() - timedelta(days=14), date.today())
+        statement = ask_for_tan(f, f.get_transactions(account, date.today() - timedelta(days=14), date.today()))
         if statement:
             click.echo(click.style('Found %d transactions. The last one is:' % len(statement), fg='green'))
             pprint.pprint(statement[-1].data)
