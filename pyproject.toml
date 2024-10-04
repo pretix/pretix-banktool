@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pretix-banktool"
 authors = [
-    {name = "Raphael Michel", email = "mail@raphaelmichel.de"},
+    {name = "pretix team", email = "support@pretix.eu"},
 ]
 description = "Command-line client for Pretix that allows to synchronize bank transaction statements to Pretix"
 readme = "README.rst"
