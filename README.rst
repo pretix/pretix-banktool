@@ -21,7 +21,7 @@ Installation and usage
 ----------------------
 
 First, make sure you have a recent Python installation on your system. If ``python -V`` gives you a version 2.x,
-try using ``python3`` instead or install a newer Python. We recommend Python 3.6+, but 3.4+ should work as well.
+try using ``python3`` instead or install a newer Python. We recommend Python 3.11+, but 3.9+ should work as well.
 
 Then, we recommend creating a virtual environment to isolate the python dependencies of this package from other
 python programs ony our system::

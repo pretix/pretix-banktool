@@ -9,7 +9,7 @@ authors = [
 ]
 description = "Command-line client for Pretix that allows to synchronize bank transaction statements to Pretix"
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["pretix", "fints", "bank"]
 license = {text = "GPL-3.0-Only"}
 classifiers = [
