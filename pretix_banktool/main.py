@@ -30,13 +30,15 @@ def test(configfile, fints, pretix):
 @main.command()
 @click.argument('configfile', type=click.Path(exists=True))
 @click.option('--days', default=30, help='Number of days to go back.')
+@click.option('--pending/--no-pending', default=False, help='Include pending transactions.')
+@click.option('--bank-ids/--no-bank-ids', default=False, help='Include transaction IDs given by bank.')
 @click.option('--ignore', help='Ignore all references that match the given regular expression. '
                                'Can be passed multiple times.', multiple=True)
-def upload(configfile, days, ignore):
+def upload(configfile, days, pending, bank_ids, ignore):
     config = configparser.ConfigParser()
     config.read(configfile)
     validate_config(config)
-    upload_transactions(config, days, ignore)
+    upload_transactions(config, days, pending, bank_ids, ignore)
 
 
 @main.command()

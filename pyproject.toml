@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
     "click>=6,<9",
-    "fints>=3,<5",
+    "fints==4.*,>=4.2.0",
     "requests",
     "mt-940>=4.12"
 ]

@@ -11,7 +11,7 @@ from pretix_banktool.utils import ask_for_tan
 from requests import RequestException
 
 
-def upload_transactions(config, days=30, ignore=None):
+def upload_transactions(config, days=30, pending=False, bank_ids=False, ignore=None):
     ignore = ignore or []
     ignore_patterns = []
     for i in ignore:
@@ -93,7 +93,15 @@ def upload_transactions(config, days=30, ignore=None):
         click.echo(click.style('Found matching SEPA account.', fg='green'))
 
         click.echo('Fetching statement of the last %d days...' % days)
-        statement = ask_for_tan(f, f.get_transactions(account, date.today() - timedelta(days=days), date.today()))
+        statement = ask_for_tan(
+            f,
+            f.get_transactions(
+                account,
+                date.today() - timedelta(days=days),
+                date.today(),
+                include_pending=pending
+            )
+        )
         if statement:
             click.echo(click.style('Found %d transactions.' % len(statement), fg='green'))
             click.echo('Parsing...')
@@ -122,12 +130,16 @@ def upload_transactions(config, days=30, ignore=None):
                         break
 
                 if not ignore:
-                    transactions.append({
+                    tx = {
                         'amount': str(transaction.data['amount'].amount),
                         'reference': reference + (' EREF: {}'.format(eref) if eref else ''),
                         'payer': ((payer.get('name') or '') + ' - ' + (payer.get('iban') or '')).strip(),
                         'date': transaction.data['date'].isoformat(),
-                    })
+                    }
+                    if bank_ids and transaction.data.get('bank_reference'):
+                        tx['external_id'] = transaction.data.get('bank_reference')
+
+                    transactions.append(tx)
 
             if ignored > 0:
                 click.echo(click.style('Ignored %d transactions.' % ignored, fg='blue'))
