@@ -7,7 +7,7 @@ name = "pretix-banktool"
 authors = [
     {name = "pretix team", email = "support@pretix.eu"},
 ]
-description = "Command-line client for Pretix that allows to synchronize bank transaction statements to Pretix"
+description = "Command-line client for pretix that allows to synchronize bank transaction statements to pretix"
 readme = "README.rst"
 requires-python = ">=3.9"
 keywords = ["pretix", "fints", "bank"]
