@@ -20,7 +20,8 @@ dependencies = [
     "click>=6,<9",
     "fints==4.*,>=4.2.0",
     "requests",
-    "mt-940>=4.12"
+    "mt-940>=4.12",
+    "term-image"
 ]
 dynamic = ["version"]
 
