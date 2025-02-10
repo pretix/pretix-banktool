@@ -52,7 +52,7 @@ def setup(type):
         click.echo(click.style('Banking information', fg='blue'))
         blz = click.prompt('Your bank\'s BLZ')
         iban = click.prompt('Your account IBAN')
-        endpoint = click.prompt('Your bank\'s FinTS endpount URL')
+        endpoint = click.prompt('Your bank\'s FinTS endpoint URL')
         username = click.prompt('Your online-banking username')
         click.echo(click.style('WARNING: If you enter your PIN here, it will be stored in clear text on your disk. '
                                'If you leave it empty, you will instead be asked for it every time.', fg='yellow'))
