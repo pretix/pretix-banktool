@@ -133,7 +133,8 @@ def upload_transactions(config, days=30, pending=False, bank_ids=False, ignore=N
                     tx = {
                         'amount': str(transaction.data['amount'].amount),
                         'reference': reference + (' EREF: {}'.format(eref) if eref else ''),
-                        'payer': ((payer.get('name') or '') + ' - ' + (payer.get('iban') or '')).strip(),
+                        'payer': (payer.get('name') or ''),
+                        'iban': (payer.get('iban') or ''),
                         'date': transaction.data['date'].isoformat(),
                     }
                     if bank_ids and transaction.data.get('bank_reference'):
