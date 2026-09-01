@@ -1,0 +1,36 @@
+name: SBOM
+on:
+  push:
+    branches: [ master, main, sbom ]
+    tags: [ 'v.*' ]
+
+permissions:
+  contents: read
+env:
+  FORCE_COLOR: 1
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Submission
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: sudo apt update && sudo apt install -y gettext unzip
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Use Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.x'
+      - name: Install Python dependencies
+        run: pip3 install -U "prisma-sbom-submit[python]"
+      - name: Create SBOM
+        run: NPM=$(which npm) prisma-sbom-submit collect . sbom.json
+      - name: Submit SBOM
+        run: prisma-sbom-submit upload --server https://prisma.pretix.com sbom.json
+        env:
+          PRISMA_UPLOAD_TOKEN: ${{ secrets.PRISMA_UPLOAD_TOKEN }}
+
