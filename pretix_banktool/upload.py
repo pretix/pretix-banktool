@@ -151,7 +151,8 @@ def upload_transactions(config, days=30, pending=False, bank_ids=False, ignore=N
             click.echo('Uploading...')
             try:
                 r = requests.post(get_endpoint(config), headers={
-                    'Authorization': 'Token {}'.format(config['pretix']['key'])
+                    'Authorization': 'Token {}'.format(config['pretix']['key']),
+                    'User-Agent': f'pretix-banktool/{__version__}',
                 }, json=payload, verify=not config.getboolean('pretix', 'insecure', fallback=False))
                 if r.status_code == 201:
                     click.echo(click.style('Job uploaded.', fg='green'))
