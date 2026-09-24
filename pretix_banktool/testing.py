@@ -23,6 +23,12 @@ def test_fints(config):
         product_id='459BE10AAEE93C6AA90BE6FE3',
         product_version=__version__
     )
+    if 'state_file' in config['fints']:
+        try:
+            with open(config['fints']['state_file'], 'rb') as f2:
+                f.set_data(f2.read())
+        except:
+            pass
 
     if not f.get_current_tan_mechanism():
         f.fetch_tan_mechanisms()
@@ -92,6 +98,10 @@ def test_fints(config):
         else:
             click.echo('No recent transaction found. Please check if this is correct.')
 
+    state = f.deconstruct(including_private=True)
+    if 'state_file' in config['fints']:
+        with open(config['fints']['state_file'], 'wb') as f2:
+            f2.write(state)
 
 def test_pretix(config):
     click.echo('Testing pretix connection...')

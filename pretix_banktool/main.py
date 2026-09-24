@@ -71,6 +71,7 @@ def setup(type):
     click.echo('')
     click.echo(click.style('Other information', fg='blue'))
     filename = click.prompt('Configuration file', default=api_organizer + '.cfg', type=click.Path(exists=False))
+    state_file = click.prompt('State file', default=api_organizer + '.state', type=click.Path(exists=False))
 
     config = configparser.ConfigParser()
     config['banktool'] = {
@@ -82,7 +83,8 @@ def setup(type):
             'endpoint': endpoint,
             'username': username,
             'iban': iban,
-            'pin': pin
+            'pin': pin,
+            'state_file': state_file,
         }
     config['pretix'] = {
         'server': api_server,
